@@ -3,7 +3,9 @@
 # MIT License
 
 import copy
+
 from dlgo.gotypes import Player
+from dlgo import zobrist
 
 # 자기 차례에 할 수 있는 행동 정의
 class Move():
@@ -33,14 +35,16 @@ class Move():
 class GoString():
     def __init__(self, color, stones, liberties):
         self.color = color
-        self.stones = set(stones)
-        self.liberties = set(liberties)
+        self.stones = frozenset(stones)
+        self.liberties = frozenset(liberties)
 
-    def remove_liberty(self, point):
-        self.liberties.remove(point)
+    def without_liberty(self, point):
+        new_liberties = self.liberties - set([point])
+        return GoString(self.color, self.stones, new_liberties)
 
-    def add_liberty(self, point):
-        self.liberties.add(point)
+    def with_liberty(self, point):
+        new_liberties = self.liberties | set([point])
+        return GoString(self.color, self.stones, new_liberties)
 
     # 두 선수의 이음의 모든 돌을 저장한 새 이음 반환
     def merged_with(self, go_string):
@@ -68,6 +72,7 @@ class Board():
         self.num_rows = num_rows
         self.num_cols = num_cols
         self._grid = {}
+        self._hash = zobrist.EMPTY_BOARD
 
     # 활로 파악용 이웃한 점 확인
     def place_stone(self, player, point):
@@ -95,13 +100,22 @@ class Board():
             new_string = new_string.merged_with(same_color_string)
         for new_string_point in new_string.stones:
             self._grid[new_string_point] = new_string
-        # 다른 색의 근접한 이음의 활로 삭제
+
+        # 해당 점과 선수의 해시 코드
+        self._hash ^= zobrist.HASH_CODE[point, player]
+
         for other_color_string in adjacent_opposite_color:
-            other_color_string.remove_liberty(point)
-        # 다른 색 이음의 활로가 0이면 돌 제거
-        for other_color_string in adjacent_opposite_color:
-            if not other_color_string.num_liberties:
+            replacement = other_color_string.without_liberty(point)
+            # 다른 색의 근접한 이음의 활로 삭제
+            if replacement.num_liberties:
+                self._replace_string(other_color_string.without_liberty(point))
+            # 다른 색 이음의 활로가 0이면 돌 제거
+            else:
                 self._remove_string(other_color_string)
+
+    def _replace_string(self, new_string):
+        for point in new_string.stones:
+            self._grid[point] = new_string
 
     def _remove_string(self, string):
         for point in string.stones:
@@ -110,8 +124,10 @@ class Board():
                 if neighbor_string is None:
                     continue
                 if neighbor_string is not string:
-                    neighbor_string.add_liberty(point)
+                    self._replace_string(neighbor_string.with_liberty(point))
             self._grid[point] = None
+
+            self._hash ^= zobrist.HASH_CODE[point, string.color]
 
     def is_on_grid(self, point):
         return 1 <= point.row <= self.num_rows and \
@@ -133,12 +149,21 @@ class Board():
             return None
         return string
 
+    def zobrist_hash(self):
+        return self._hash
+
 # 대국 현황 정의
 class GameState():
     def __init__(self, board, next_player, previous, move):
         self.board = board
         self.next_player = next_player
         self.previous_state = previous
+        if self.previous_state is None:
+            self.previous_states = frozenset()
+        else:
+            self.previous_states = frozenset(
+                previous.previous_states | {(previous.next_player, previous.board.zobrist_hash())}
+            )
         self.last_move = move
 
     def apply_move(self, move):
@@ -186,13 +211,8 @@ class GameState():
             return False
         next_board = copy.deepcopy(self.board)
         next_board.place_stone(player, move.point)
-        next_situation = (player.other, next_board)
-        past_state = self.previous_state
-        while past_state is not None:
-            if past_state.situation == next_situation:
-                return True
-            past_state = past_state.previous_state
-        return False
+        next_situation = (player.other, next_board.zobrist_hash())
+        return next_situation in self.previous_states
 
     # 유효한 수인지 확인
     def is_valid_move(self, move):
