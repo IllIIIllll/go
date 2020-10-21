@@ -5,3 +5,4 @@
 from .goboard import *
 from .gotypes import *
 from .utils import *
+from .zobrist import *
