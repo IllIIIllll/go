@@ -4,3 +4,4 @@
 
 from .goboard import *
 from .gotypes import *
+from .utils import *
