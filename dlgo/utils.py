@@ -31,3 +31,9 @@ def print_board(board):
             line.append(STONE_TO_CHAR[stone])
         print(f'{bump}{row} {"".join(line)}')
     print(f'{"    "}{"  ".join(COLS[:board.num_cols])}')
+
+# 입력값을 좌표로 변환
+def point_from_coords(coords):
+    col = COLS.index(coords[0].upper()) + 1
+    row = int(coords[1:])
+    return gotypes.Point(row=row, col=col)
