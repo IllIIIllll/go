@@ -4,7 +4,7 @@
 
 import copy
 
-from dlgo.gotypes import Player
+from dlgo.gotypes import Player, Point
 from dlgo import zobrist
 
 # 자기 차례에 할 수 있는 행동 정의
@@ -225,3 +225,18 @@ class GameState():
             not self.is_move_self_capture(self.next_player, move) and
             not self.does_move_violate_ko(self.next_player, move)
         )
+
+    def legal_moves(self):
+        if self.is_over():
+            return []
+        moves = []
+        for row in range(1, self.board.num_rows + 1):
+            for col in range(1, self.board.num_cols + 1):
+                move = Move.play(Point(row, col))
+                if self.is_valid_move(move):
+                    moves.append(move)
+
+        moves.append(Move.pass_turn())
+        moves.append(Move.resign())
+
+        return moves
