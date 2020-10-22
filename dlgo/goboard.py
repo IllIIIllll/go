@@ -5,6 +5,7 @@
 import copy
 
 from dlgo.gotypes import Player, Point
+from dlgo.scoring import compute_game_result
 from dlgo import zobrist
 
 # 자기 차례에 할 수 있는 행동 정의
@@ -240,3 +241,11 @@ class GameState():
         moves.append(Move.resign())
 
         return moves
+
+    def winner(self):
+        if not self.is_over():
+            return None
+        if self.last_move.is_resign:
+            return self.next_player
+        game_result = compute_game_result(self)
+        return game_result.winner
