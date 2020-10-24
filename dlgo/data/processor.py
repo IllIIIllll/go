@@ -2,11 +2,14 @@
 # <llllllllll@kakao.com>
 # MIT License
 
+import os
 import os.path
 import tarfile
 import gzip
 import glob
 import shutil
+import multiprocessing
+import sys
 
 import numpy as np
 from keras.utils import to_categorical
@@ -18,35 +21,36 @@ from dlgo.encoders.base import get_encoder_by_name
 
 from dlgo.data.index_processor import KGSIndex
 from dlgo.data.sampling import Sampler
+from dlgo.data.generator import DataGenerator
+
+def worker(jobinfo):
+    try:
+        clazz, encoder, zip_file, data_file_name, game_list = jobinfo
+        clazz(encoder=encoder).process_zip(zip_file, data_file_name, game_list)
+    except (KeyboardInterrupt, SystemExit):
+        raise Exception('>>> Exiting child process.')
 
 class GoDataProcessor:
-    def __init__(self, encoder='oneplane', data_directory='data'):
+    def __init__(self, encoder='simple', data_directory='data'):
         self.encoder = get_encoder_by_name(encoder, 19)
         self.data_dir = data_directory
+        self.encoder_string = encoder
 
-    def load_go_data(self, data_type='train',
-                     num_samples=1000):
+    def load_go_data(self, data_type='train', num_samples=1000,
+                     use_generator=False):
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
 
         sampler = Sampler(data_dir=self.data_dir)
         data = sampler.draw_data(data_type, num_samples)
 
-        zip_names = set()
-        indices_by_zip_name = {}
-        for filename, index in data:
-            zip_names.add(filename)
-            if filename not in indices_by_zip_name:
-                indices_by_zip_name[filename] = []
-            indices_by_zip_name[filename].append(index)
-        for zip_name in zip_names:
-            base_name = zip_name.replace('.tar.gz', '')
-            data_file_name = base_name + data_type
-            if not os.path.isfile(self.data_dir + '/' + data_file_name):
-                self.process_zip(zip_name, data_file_name, indices_by_zip_name[zip_name])
-
-        features_and_labels = self.consolidate_games(data_type, data)
-        return features_and_labels
+        self.map_to_workers(data_type, data)
+        if use_generator:
+            generator = DataGenerator(self.data_dir, data)
+            return generator
+        else:
+            features_and_labels = self.consolidate_games(data_type, data)
+            return features_and_labels
 
     def unzip_data(self, zip_file_name):
         this_gz = gzip.open(self.data_dir + '/' + zip_file_name)
@@ -132,8 +136,12 @@ class GoDataProcessor:
                 label_list.append(y)
         features = np.concatenate(feature_list, axis=0)
         labels = np.concatenate(label_list, axis=0)
-        np.save('{}/features_{}.npy'.format(self.data_dir, data_type), features)
-        np.save('{}/labels_{}.npy'.format(self.data_dir, data_type), labels)
+
+        feature_file = self.data_dir + '/' + data_type
+        label_file = self.data_dir + '/' + data_type
+
+        np.save(feature_file, features)
+        np.save(label_file, labels)
 
         return features, labels
 
@@ -172,3 +180,30 @@ class GoDataProcessor:
             else:
                 raise ValueError(name + ' is not a valid sgf')
         return total_examples
+
+    def map_to_workers(self, data_type, samples):
+        zip_names = set()
+        indices_by_zip_name = {}
+        for filename, index in samples:
+            zip_names.add(filename)
+            if filename not in indices_by_zip_name:
+                indices_by_zip_name[filename] = []
+            indices_by_zip_name[filename].append(index)
+
+        zips_to_process = []
+        for zip_name in zip_names:
+            base_name = zip_name.replace('.tar.gz', '')
+            data_file_name = base_name + data_type
+            if not os.path.isfile(self.data_dir + '/' + data_file_name):
+                zips_to_process.append((self.__class__, self.encoder_string, zip_name,
+                                        data_file_name, indices_by_zip_name[zip_name]))
+
+        cores = multiprocessing.cpu_count()
+        pool = multiprocessing.Pool(processes=cores)
+        p = pool.map_async(worker, zips_to_process)
+        try:
+            _ = p.get()
+        except KeyboardInterrupt:
+            pool.terminate()
+            pool.join()
+            sys.exit(-1)
