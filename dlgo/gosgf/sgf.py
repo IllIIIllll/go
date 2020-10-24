@@ -4,8 +4,8 @@
 
 import datetime
 
-from . import sgf_grammar
-from . import sgf_properties
+from dlgo.gosgf import sgf_grammar
+from dlgo.gosgf import sgf_properties
 
 class Node:
     def __init__(self, property_map, presenter):
