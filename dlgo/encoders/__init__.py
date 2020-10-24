@@ -3,3 +3,4 @@
 # MIT License
 
 from .base import *
+from .sevenplane import *
