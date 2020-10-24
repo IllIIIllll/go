@@ -4,3 +4,4 @@
 
 from .base import *
 from .sevenplane import *
+from .simple import *
