@@ -3,9 +3,6 @@
 # MIT License
 
 import re
-import string
-
-import six
 
 _propident_re = re.compile(r"\A[A-Z]{1,8}\Z".encode('ascii'))
 _propvalue_re = re.compile(r"\A [^\\\]]* (?: \\. [^\\\]]* )* \Z".encode('ascii'),
@@ -231,11 +228,7 @@ def compose(s1, s2):
     return s1.replace(b":", b"\\:") + b":" + s2
 
 _newline_re = re.compile(r"\n\r|\r\n|\n|\r".encode('ascii'))
-if six.PY2:
-    _binary_maketrans = string.maketrans
-else:
-    _binary_maketrans = bytes.maketrans
-_whitespace_table = _binary_maketrans(b"\t\f\v", b"   ")
+_whitespace_table = bytes.maketrans(b"\t\f\v", b"   ")
 _chunk_re = re.compile(r" [^\n\\]+ | [\n\\] ".encode('ascii'), re.VERBOSE)
 
 def simpletext_value(s):
