@@ -2,8 +2,8 @@
 # <llllllllll@kakao.com>
 # MIT License
 
-from keras.layers.core import Dense, Activation, Flatten
-from keras.layers.convolutional import Conv2D, ZeroPadding2D
+from tensorflow.keras.layers import Dense, Activation, Flatten
+from tensorflow.keras.layers import Conv2D, ZeroPadding2D
 
 def layers(input_shape):
     return [
