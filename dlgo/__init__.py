@@ -7,3 +7,4 @@ from .gotypes import *
 from .utils import *
 from .zobrist import *
 from .scoring import *
+from .kerasutil import *
