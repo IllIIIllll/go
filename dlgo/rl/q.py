@@ -3,6 +3,7 @@
 # MIT License
 
 import numpy as np
+from tensorflow.keras.optimizers import SGD
 
 from dlgo.agent.base import Agent
 from dlgo import goboard
@@ -65,3 +66,23 @@ class QAgent(Agent):
             values = np.random.random(values.shape)
         ranked_moves = np.argsort(values)
         return ranked_moves[::-1]
+
+    def train(self, experience, lr=0.1, batch_size=128):
+        opt = SGD(lr=lr)
+        self.model.compile(loss='mse', optimizer=opt)
+
+        n = experience.states.shape[0]
+        num_moves = self.encoder.num_points()
+        y = np.zeros((n, ))
+        actions = np.zeros((n, num_moves))
+        for i in range(n):
+            action = experience.actions[i]
+            reward = experience.rewards[i]
+            actions[i][action] = 1
+            y[i] = reward
+
+        self.model.fit(
+            [experience.states, actions], y,
+            batch_size=batch_size,
+            epochs=1
+        )
