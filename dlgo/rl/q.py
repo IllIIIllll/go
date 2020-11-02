@@ -8,6 +8,7 @@ from tensorflow.keras.optimizers import SGD
 from dlgo.agent.base import Agent
 from dlgo import goboard
 from dlgo.agent.helpers import is_point_an_eye
+from dlgo import kerasutil
 
 class QAgent(Agent):
     def __init__(self, model, encoder):
@@ -82,7 +83,16 @@ class QAgent(Agent):
             y[i] = reward
 
         self.model.fit(
-            [experience.states, actions], y,
+            [experience.states, actions],
+            y,
             batch_size=batch_size,
             epochs=1
         )
+
+    def serialize(self, h5file):
+        h5file.create_group('encoder')
+        h5file['encoder'].attrs['name'] = self.encoder.name()
+        h5file['encoder'].attrs['board_width'] = self.encoder.board_width
+        h5file['encoder'].attrs['board_height'] = self.encoder.board_height
+        h5file.create_group('model')
+        kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
