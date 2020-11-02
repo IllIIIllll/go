@@ -16,6 +16,7 @@ class QAgent(Agent):
         self.encoder = encoder
         self.collector = None
         self.temperature = 0.0
+        self.last_move_value = 0
 
     def set_temperature(self, temperature):
         self.temperature = temperature
@@ -59,6 +60,7 @@ class QAgent(Agent):
                         state=board_tensor,
                         action=moves[move_idx]
                     )
+                self.last_move_value = float(values[move_idx])
                 return goboard.Move.play(point)
         return goboard.Move.pass_turn()
 
@@ -96,3 +98,6 @@ class QAgent(Agent):
         h5file['encoder'].attrs['board_height'] = self.encoder.board_height
         h5file.create_group('model')
         kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
+
+    def diagnostics(self):
+        return {'value': self.last_move_value}
