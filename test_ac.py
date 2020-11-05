@@ -5,7 +5,7 @@
 import argparse
 import h5py
 
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, Input
+from tensorflow.keras.layers import ZeroPadding2D, Conv2D, Dense, Flatten, Input
 from tensorflow.keras.models import Model
 
 from dlgo import rl
@@ -21,26 +21,13 @@ def main():
 
     board_input = Input(shape=encoder.shape(), name='board_input')
 
-    conv1 = Conv2D(
-        64,
-        (3, 3),
-        padding='same',
-        activation='relu'
-    )(board_input)
-    conv2 = Conv2D(
-        64,
-        (3, 3),
-        padding='same',
-        activation='relu'
-    )(conv1)
-    conv3 = Conv2D(
-        64,
-        (3, 3),
-        padding='same',
-        activation='relu'
-    )(conv2)
+    conv1a = ZeroPadding2D((2, 2))(board_input)
+    conv1b = Conv2D(64, (5, 5), activation='relu')(conv1a)
 
-    flat = Flatten()(conv3)
+    conv2a = ZeroPadding2D((1, 1))(conv1b)
+    conv2b = Conv2D(64, (3, 3), activation='relu')(conv2a)
+
+    flat = Flatten()(conv2b)
     processed_board = Dense(512)(flat)
 
     policy_hidden_layer = Dense(
