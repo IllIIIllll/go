@@ -23,7 +23,7 @@ class QAgent(Agent):
         self.temperature = temperature
 
     def set_collector(self, collector):
-        self.collector - collector
+        self.collector = collector
 
     def select_move(self, game_state):
         board_tensor = self.encoder.encode(game_state)
