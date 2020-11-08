@@ -112,5 +112,6 @@ def load_q_agent(h5file):
     board_height = h5file['encoder'].attrs['board_height']
     encoder = encoders.get_encoder_by_name(
         encoder_name,
-        (board_width, board_height))
+        (board_width, board_height)
+    )
     return QAgent(model, encoder)
