@@ -7,6 +7,7 @@ import numpy as np
 from dlgo.agent.base import Agent
 from dlgo import goboard
 from dlgo.agent.helpers import is_point_an_eye
+from dlgo import kerasutil
 
 class ACAgent(Agent):
     def __init__(self, model, encoder):
@@ -52,3 +53,11 @@ class ACAgent(Agent):
                     )
                 return goboard.Move.play(point)
         return goboard.Move.pass_turn()
+
+    def serialize(self, h5file):
+        h5file.create_group('encoder')
+        h5file['encoder'].attrs['name'] = self.encoder.name()
+        h5file['encoder'].attrs['board_width'] = self.encoder.board_width
+        h5file['encoder'].attrs['board_height'] = self.encoder.board_height
+        h5file.create_group('model')
+        kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
