@@ -61,3 +61,6 @@ class ACAgent(Agent):
         h5file['encoder'].attrs['board_height'] = self.encoder.board_height
         h5file.create_group('model')
         kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
+
+    def diagnostics(self):
+        return {'value': self.last_state_value}
