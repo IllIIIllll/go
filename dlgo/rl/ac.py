@@ -3,6 +3,7 @@
 # MIT License
 
 import numpy as np
+from tensorflow.keras.optimizers import SGD
 
 from dlgo.agent.base import Agent
 from dlgo import goboard
@@ -54,6 +55,31 @@ class ACAgent(Agent):
                     )
                 return goboard.Move.play(point)
         return goboard.Move.pass_turn()
+
+    def train(self, experience, lr=0.1, batch_size=128):
+        opt = SGD(lr=lr)
+        self.model.compile(
+            optimizer=opt,
+            loss=['categorical_crossentropy', 'mse'],
+            loss_weights=[1.0, 0.5]
+        )
+
+        n = experience.states.shape[0]
+        num_moves = self.encoder.num_points()
+        policy_target = np.zeros((n, num_moves))
+        value_target = np.zeros((n, ))
+        for i in range(n):
+            action = experience.actions[i]
+            policy_target[i][action] = experience.advantages[i]
+            reward = experience.rewards[i]
+            value_target[i] = reward
+
+        self.model.fit(
+            experience.states,
+            [policy_target, value_target],
+            batch_size=batch_size,
+            epochs=1
+        )
 
     def serialize(self, h5file):
         h5file.create_group('encoder')
