@@ -14,9 +14,9 @@ from dlgo.goboard import GameState, Player, Point
 
 COLS = 'ABCDEFGHJKLMNOPQRST'
 STONE_TO_CHAR = {
-    None: '.',
-    Player.black: 'x',
-    Player.white: 'o',
+    None: ' . ',
+    Player.black: ' X ',
+    Player.white: ' O ',
 }
 
 def avg(items):
