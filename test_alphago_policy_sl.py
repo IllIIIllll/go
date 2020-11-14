@@ -39,3 +39,8 @@ alphago_sl_agent = DeepLearningAgent(alphago_sl_policy, encoder)
 
 with h5py.File('alphago_sl_policy.h5', 'w') as sl_agent_out:
     alphago_sl_agent.serialize(sl_agent_out)
+
+alphago_sl_policy.evaluate_generator(
+    generator=test_generator.generate(batch_size, num_classes),
+    steps=test_generator.get_num_samples() / batch_size
+)
