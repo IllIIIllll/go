@@ -32,6 +32,34 @@ class Move():
     def resign(cls):
         return Move(is_resign=True)
 
+    def __str__(self):
+        if self.is_pass:
+            return 'pass'
+        if self.is_resign:
+            return 'resign'
+        return f'(r {self.point.row}, c {self.point.col})'
+
+    def __hash__(self):
+        return hash(
+            (
+                self.is_play,
+                self.is_pass,
+                self.is_resign,
+                self.point
+            )
+        )
+
+    def  __eq__(self, other):
+        return (
+            self.is_play,
+            self.is_pass,
+            self.is_resign,
+            self.point) == (
+            other.is_play,
+            other.is_pass,
+            other.is_resign,
+            other.point)
+
 # 이음 정의
 class GoString():
     def __init__(self, color, stones, liberties):
