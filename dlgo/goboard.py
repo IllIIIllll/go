@@ -7,6 +7,41 @@ import copy
 from dlgo.gotypes import Player, Point
 from dlgo.scoring import compute_game_result
 from dlgo import zobrist
+from dlgo.utils import MoveAge
+
+neighbor_tables = {}
+corner_tables = {}
+
+def init_neighbor_table(dim):
+    rows, cols = dim
+    new_table = {}
+    for r in range(1, rows + 1):
+        for c in range(1, cols + 1):
+            p = Point(row=r, col=c)
+            full_neighbors = p.neighbors()
+            true_neighbors = [
+                n for n in full_neighbors
+                if 1 <= n.row <= rows and 1 <= n.col <= cols]
+            new_table[p] = true_neighbors
+    neighbor_tables[dim] = new_table
+
+def init_corner_table(dim):
+    rows, cols = dim
+    new_table = {}
+    for r in range(1, rows + 1):
+        for c in range(1, cols + 1):
+            p = Point(row=r, col=c)
+            full_corners = [
+                Point(row=p.row - 1, col=p.col - 1),
+                Point(row=p.row - 1, col=p.col + 1),
+                Point(row=p.row + 1, col=p.col - 1),
+                Point(row=p.row + 1, col=p.col + 1),
+            ]
+            true_corners = [
+                n for n in full_corners
+                if 1 <= n.row <= rows and 1 <= n.col <= cols]
+            new_table[p] = true_corners
+    corner_tables[dim] = new_table
 
 # 자기 차례에 할 수 있는 행동 정의
 class Move():
@@ -103,16 +138,28 @@ class Board():
         self._grid = {}
         self._hash = zobrist.EMPTY_BOARD
 
+        global neighbor_tables
+        dim = (num_rows, num_cols)
+        if dim not in neighbor_tables:
+            init_neighbor_table(dim)
+        if dim not in corner_tables:
+            init_corner_table(dim)
+        self.neighbor_table = neighbor_tables[dim]
+        self.corner_table = corner_tables[dim]
+        self.move_ages = MoveAge(self)
+
     # 활로 파악용 이웃한 점 확인
     def place_stone(self, player, point):
         assert self.is_on_grid(point)
+        if self._grid.get(point) is not None:
+            print(f'Illegal play on {str(point)}')
         assert self._grid.get(point) is None
         adjacent_same_color = []
         adjacent_opposite_color = []
         liberties = []
-        for neighbor in point.neighbors():
-            if not self.is_on_grid(neighbor):
-                continue
+        self.move_ages.increment_all()
+        self.move_ages.add(point)
+        for neighbor in self.neighbor_table[point]:
             neighbor_string = self._grid.get(neighbor)
             if neighbor_string is None:
                 liberties.append(neighbor)
@@ -130,6 +177,8 @@ class Board():
         for new_string_point in new_string.stones:
             self._grid[new_string_point] = new_string
 
+        # 빈 점의 해시코드 삭제
+        self._hash ^= zobrist.HASH_CODE[point, None]
         # 해당 점과 선수의 해시 코드
         self._hash ^= zobrist.HASH_CODE[point, player]
 
@@ -148,15 +197,16 @@ class Board():
 
     def _remove_string(self, string):
         for point in string.stones:
-            for neighbor in point.neighbors():
+            self.move_ages.reset_age(point)
+            for neighbor in self.neighbor_table[point]:
                 neighbor_string = self._grid.get(neighbor)
                 if neighbor_string is None:
                     continue
                 if neighbor_string is not string:
                     self._replace_string(neighbor_string.with_liberty(point))
             self._grid[point] = None
-
             self._hash ^= zobrist.HASH_CODE[point, string.color]
+            self._hash ^= zobrist.HASH_CODE[point, None]
 
     def is_on_grid(self, point):
         return 1 <= point.row <= self.num_rows and \
@@ -180,6 +230,51 @@ class Board():
 
     def zobrist_hash(self):
         return self._hash
+
+    def neighbors(self, point):
+        return self.neighbor_table[point]
+
+    def corners(self, point):
+        return self.corner_table[point]
+
+    def is_self_capture(self, player, point):
+        friendly_strings = []
+        for neighbor in self.neighbor_table[point]:
+            neighbor_string = self._grid.get(neighbor)
+            if neighbor_string is None:
+                return False
+            elif neighbor_string.color == player:
+                friendly_strings.append(neighbor_string)
+            else:
+                if neighbor_string.num_liberties == 1:
+                    return False
+        if all(neighbor.num_liberties == 1 for neighbor in friendly_strings):
+            return True
+        return False
+
+    def will_capture(self, player, point):
+        for neighbor in self.neighbor_table[point]:
+            neighbor_string = self._grid.get(neighbor)
+            if neighbor_string is None:
+                continue
+            elif neighbor_string.color == player:
+                continue
+            else:
+                if neighbor_string.num_liberties == 1:
+                    return True
+        return False
+
+    def __eq__(self, other):
+        return isinstance(other, Board) and \
+            self.num_rows == other.num_rows and \
+            self.num_cols == other.num_cols and \
+            self._hash() == other._hash()
+
+    def __deepcopy__(self, memodict={}):
+        copied = Board(self.num_rows, self.num_cols)
+        copied._grid = copy.copy(self._grid)
+        copied._hash = self._hash
+        return copied
 
 # 대국 현황 정의
 class GameState():
