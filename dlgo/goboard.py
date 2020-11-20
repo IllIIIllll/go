@@ -225,10 +225,7 @@ class GameState():
     def is_move_self_capture(self, player, move):
         if not move.is_play:
             return False
-        next_board = copy.deepcopy(self.board)
-        next_board.place_stone(player, move.point)
-        new_string = next_board.get_go_string(move.point)
-        return not new_string.num_liberties
+        return self.board.is_self_capture(player, move.point)
 
     @property
     def situation(self):
@@ -237,6 +234,8 @@ class GameState():
     # 패 규칙 위반 확인
     def does_move_violate_ko(self, player, move):
         if not move.is_play:
+            return False
+        if not self.board.will_capture(player, move.point):
             return False
         next_board = copy.deepcopy(self.board)
         next_board.place_stone(player, move.point)
