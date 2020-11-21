@@ -43,6 +43,9 @@ def init_corner_table(dim):
             new_table[p] = true_corners
     corner_tables[dim] = new_table
 
+class IllegalMoveError(Exception):
+    pass
+
 # 자기 차례에 할 수 있는 행동 정의
 class Move():
     def __init__(self, point=None, is_pass=False, is_resign=False):
