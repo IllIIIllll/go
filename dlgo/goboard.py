@@ -130,6 +130,9 @@ class GoString():
             self.stones == other.stones and \
             self.liberties == other.liberties
 
+    def __deepcopy__(self, memodict={}):
+        return GoString(self.color, self.stones, copy.deepcopy(self.liberties))
+
 # 바둑판 정의
 class Board():
     def __init__(self, num_rows, num_cols):
