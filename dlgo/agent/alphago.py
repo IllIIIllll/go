@@ -11,3 +11,12 @@ class AlphaGoNode:
         self.q_value = 0
         self.prior_value = probability
         self.u_value = probability
+
+    def select_child(self):
+        return max(self.children.items(),
+                   key=lambda child: child[1].q_value + child[1].u_value)
+
+    def expand_children(self, moves, probabilities):
+        for move, prob in zip(moves, probabilities):
+            if move not in self.children:
+                self.children[move] = AlphaGoNode(probability=prob)
