@@ -73,3 +73,13 @@ class AlphaGoMCTS(Agent):
                 self.lambda_value * rollout
 
             node.update_values(weighted_value)
+
+        move = max(self.root.children, key=lambda move:
+                   self.root.children.get(move).visit_count)
+
+        self.root = AlphaGoNode()
+        if move in self.root.children:
+            self.root = self.root.children[move]
+            self.root.parent = None
+
+        return move
