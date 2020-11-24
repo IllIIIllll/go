@@ -51,3 +51,25 @@ class AlphaGoMCTS(Agent):
         self.depth = depth
         self.rollout_limit = rollout_limit
         self.root = AlphaGoNode()
+
+    def select_move(self, game_state):
+        for simulation in range(self.num_simulations):
+            current_state = game_state
+            node = self.root
+            for depth in range(self.depth):
+                if not node.children:
+                    if current_state.is_over():
+                        break
+                    moves, probabilities = self.policy_probabilities(current_state)
+                    node.expand_children(moves, probabilities)
+
+                move, node = node.select_child()
+                current_state = current_state.apply_move(move)
+
+            value = self.value.predict(current_state)
+            rollout = self.policy_rollout(current_state)
+
+            weighted_value = (1 - self.lambda_value) * value + \
+                self.lambda_value * rollout
+
+            node.update_values(weighted_value)
