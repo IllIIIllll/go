@@ -4,6 +4,8 @@
 
 import numpy as np
 
+from dlgo.agent.base import Agent
+
 class AlphaGoNode:
     def __init__(self, parent=None, probability=1.0):
         self.parent = parent
@@ -35,3 +37,17 @@ class AlphaGoNode:
             c_u = 5
             self.u_value = c_u * np.sqrt(self.parent.visit_count) \
                 * self.prior_value / (1 + self.visit_count)
+
+class AlphaGoMCTS(Agent):
+    def __init__(self, policy_agent, fast_policy_agent, value_agent,
+                 lambda_value=0.5, num_simulations=1000,
+                 depth=50, rollout_limit=100):
+        self.policy = policy_agent
+        self.rollout_policy = fast_policy_agent
+        self.value = value_agent
+
+        self.lambda_value = lambda_value
+        self.num_simulations = num_simulations
+        self.depth = depth
+        self.rollout_limit = rollout_limit
+        self.root = AlphaGoNode()
