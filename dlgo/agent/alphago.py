@@ -83,3 +83,14 @@ class AlphaGoMCTS(Agent):
             self.root.parent = None
 
         return move
+
+    def policy_probabilities(self, game_state):
+        encoder = self.policy._encoder
+        outputs = self.policy.predict(game_state)
+        legal_moves = game_state.legal_moves()
+        if not legal_moves:
+            return [], []
+        encoded_points = [encoder.encode_point(move.point) for move in legal_moves if move.point]
+        legal_outputs = outputs[encoded_points]
+        normalized_outputs = legal_outputs / np.sum(legal_outputs)
+        return legal_moves, normalized_outputs
