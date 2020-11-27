@@ -5,6 +5,9 @@
 import numpy as np
 
 from dlgo.agent.base import Agent
+from dlgo.goboard import Move
+
+import operator
 
 class AlphaGoNode:
     def __init__(self, parent=None, probability=1.0):
@@ -94,3 +97,24 @@ class AlphaGoMCTS(Agent):
         legal_outputs = outputs[encoded_points]
         normalized_outputs = legal_outputs / np.sum(legal_outputs)
         return legal_moves, normalized_outputs
+
+    def policy_rollout(self, game_state):
+        for step in range(self.rollout_limit):
+            if game_state.is_over():
+                break
+            move_probabilities = self.rollout_policy.predict(game_state)
+            encoder = self.rollout_policy.encoder
+            valid_moves = [m for idx, m in enumerate(move_probabilities)
+                           if Move(encoder.decode_point_index(idx)) in game_state.legal_moves()]
+            max_index, max_value = max(enumerate(valid_moves), key=operator.itemgetter(1))
+            max_point = encoder.decode_point_index(max_index)
+            greedy_move = Move(max_point)
+            if greedy_move in game_state.legal_moves():
+                game_state = game_state.apply_move(greedy_move)
+
+        next_player = game_state.next_player
+        winner = game_state.winner()
+        if winner is not None:
+            return 1 if winner == next_player else -1
+        else:
+            return 0
