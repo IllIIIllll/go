@@ -7,3 +7,4 @@ from .helpers import *
 from .naive import *
 from .predict import *
 from .pg import *
+from .alphago import *
