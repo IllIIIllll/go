@@ -8,3 +8,4 @@ from .sevenplane import *
 from .simple import *
 from .utils import *
 from .alphago import *
+from .zero import *
