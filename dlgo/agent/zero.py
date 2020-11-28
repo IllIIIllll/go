@@ -2,6 +2,10 @@
 # <llllllllll@kakao.com>
 # MIT License
 
+import numpy as np
+
+from dlgo.agent.base import Agent
+
 class Branch:
     def __init__(self, prior):
         self.prior = prior
@@ -43,3 +47,16 @@ class ZeroTreeNode:
         if move in self.branches:
             return self.branches[move].visit_count
         return 0
+
+class ZeroAgent(Agent):
+
+    def select_branch(self, node):
+        total_n = node.total_visit_count
+
+        def score_branch(move):
+            q = node.expected_value(move)
+            p = node.prior(move)
+            n = node.visit_count(move)
+            return q + self.c * p * np.sqrt(total_n) / (n + 1)
+
+        return max(node.moves(), key=score_branch)
