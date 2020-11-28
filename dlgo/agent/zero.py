@@ -29,3 +29,17 @@ class ZeroTreeNode:
 
     def has_child(self, move):
         return move in self.children
+
+    def expected_value(self, move):
+        branch = self.branches[move]
+        if branch.visit_count == 0:
+            return 0.0
+        return branch.total_value / branch.visit_count
+
+    def prior(self, move):
+        return self.branches[move].prior
+
+    def visit_count(self, move):
+        if move in self.branches:
+            return self.branches[move].visit_count
+        return 0
