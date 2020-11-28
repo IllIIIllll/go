@@ -98,3 +98,25 @@ class ZeroAgent(Agent):
             while node.has_child(next_move):
                 node = node.get_child(next_move)
                 next_move = self.select_branch(node)
+
+    def create_node(self, game_state, move=None, parent=None):
+        state_tensor = self.encoder.encode(game_state)
+        model_input = np.array([state_tensor])
+        priors, values = self.model.predict(model_input)
+        priors = priors[0]
+        if parent is None:
+            noise = np.random.dirichlet(
+                0.03 * np.ones_like(priors))
+            priors = 0.75 * priors + 0.25 * noise
+        value = values[0][0]
+        move_priors = {
+            self.encoder.decode_move_index(idx): p
+            for idx, p in enumerate(priors)
+        }
+        new_node = ZeroTreeNode(
+            game_state, value,
+            move_priors,
+            parent, move)
+        if parent is not None:
+            parent.add_child(move, new_node)
+        return new_node
