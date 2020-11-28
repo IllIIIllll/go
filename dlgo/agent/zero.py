@@ -48,6 +48,11 @@ class ZeroTreeNode:
             return self.branches[move].visit_count
         return 0
 
+    def record_visit(self, move, value):
+        self.total_visit_count += 1
+        self.branches[move].visit_count += 1
+        self.branches[move].total_value += value
+
 class ZeroAgent(Agent):
     def __init__(self, model, encoder, rounds_per_move=1600, c=2.0):
         self.model = model
@@ -98,6 +103,18 @@ class ZeroAgent(Agent):
             while node.has_child(next_move):
                 node = node.get_child(next_move)
                 next_move = self.select_branch(node)
+
+            new_state = node.state.apply_move(next_move)
+            child_node = self.create_node(
+                new_state, parent=node)
+
+            move = next_move
+            value = -1 * child_node.value
+            while node is not None:
+                node.record_visit(move, value)
+                move = node.last_move
+                node = node.parent
+                value = -1 * value
 
     def create_node(self, game_state, move=None, parent=None):
         state_tensor = self.encoder.encode(game_state)
