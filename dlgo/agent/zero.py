@@ -116,6 +116,8 @@ class ZeroAgent(Agent):
                 node = node.parent
                 value = -1 * value
 
+        return max(root.moves(), key=root.visit_count)
+
     def create_node(self, game_state, move=None, parent=None):
         state_tensor = self.encoder.encode(game_state)
         model_input = np.array([state_tensor])
