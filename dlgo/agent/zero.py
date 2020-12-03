@@ -3,6 +3,7 @@
 # MIT License
 
 import numpy as np
+from tensorflow.keras.optimizers import SGD
 
 from dlgo.agent.base import Agent
 
@@ -149,3 +150,22 @@ class ZeroAgent(Agent):
         if parent is not None:
             parent.add_child(move, new_node)
         return new_node
+
+    def train(self, experience, learning_rate, batch_size):
+        num_examples = experience.states.shape[0]
+
+        model_input = experience.states
+
+        visit_sums = np.sum(
+            experience.visit_counts, axis=1).reshape(
+            (num_examples, 1))
+        action_target = experience.visit_counts / visit_sums
+
+        value_target = experience.rewards
+
+        self.model.compile(
+            SGD(lr=learning_rate),
+            loss=['categorical_crossentropy', 'mse'])
+        self.model.fit(
+            model_input, [action_target, value_target],
+            batch_size=batch_size)
