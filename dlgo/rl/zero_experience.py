@@ -26,3 +26,18 @@ class ZeroExperienceCollector:
 
         self._current_episode_states = []
         self._current_episode_visit_counts = []
+
+class ZeroExperienceBuffer(object):
+    def __init__(self, states, visit_counts, rewards):
+        self.states = states
+        self.visit_counts = visit_counts
+        self.rewards = rewards
+
+    def serialize(self, h5file):
+        h5file.create_group('experience')
+        h5file['experience'].create_dataset(
+            'states', data=self.states)
+        h5file['experience'].create_dataset(
+            'visit_counts', data=self.visit_counts)
+        h5file['experience'].create_dataset(
+            'rewards', data=self.rewards)
