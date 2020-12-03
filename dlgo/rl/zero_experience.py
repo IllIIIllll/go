@@ -53,3 +53,9 @@ def combine_experience(collectors):
         combined_states,
         combined_visit_counts,
         combined_rewards)
+
+def load_experience(h5file):
+    return ZeroExperienceBuffer(
+        states=np.array(h5file['experience']['states']),
+        visit_counts=np.array(h5file['experience']['visit_counts']),
+        rewards=np.array(h5file['experience']['rewards']))
