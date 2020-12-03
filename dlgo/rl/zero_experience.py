@@ -2,6 +2,8 @@
 # <llllllllll@kakao.com>
 # MIT License
 
+import numpy as np
+
 class ZeroExperienceCollector:
     def __init__(self):
         self.states = []
@@ -41,3 +43,13 @@ class ZeroExperienceBuffer(object):
             'visit_counts', data=self.visit_counts)
         h5file['experience'].create_dataset(
             'rewards', data=self.rewards)
+
+def combine_experience(collectors):
+    combined_states = np.concatenate([np.array(c.states) for c in collectors])
+    combined_visit_counts = np.concatenate([np.array(c.visit_counts) for c in collectors])
+    combined_rewards = np.concatenate([np.array(c.rewards) for c in collectors])
+
+    return ZeroExperienceBuffer(
+        combined_states,
+        combined_visit_counts,
+        combined_rewards)
