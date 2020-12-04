@@ -60,6 +60,7 @@ class ZeroAgent(Agent):
         self.encoder = encoder
         self.num_rounds = rounds_per_move
         self.c = c
+        self.collector = None
 
     def select_branch(self, node):
         total_n = node.total_visit_count
@@ -94,6 +95,9 @@ class ZeroAgent(Agent):
         if parent is not None:
             parent.add_child(move, new_node)
         return new_node
+
+    def set_collector(self, collector):
+        self.collector = collector
 
     def select_move(self, game_state):
         root = self.create_node(game_state)
